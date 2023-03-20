@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/adam-kowalczuk/tinyurl/issues"
   },
-  "homepage": "https://github.com/adam-kowalczuk/tinyurl#readme"
+  "homepage": "https://github.com/adam-kowalczuk/tinyurl#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }

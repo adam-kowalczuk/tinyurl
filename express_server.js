@@ -13,6 +13,8 @@ const urlDatabase = {
   "9sm5xk": "http://www.google.com"
 };
 
+//MIDDLEWARE
+
 app.use(express.urlencoded({ extended: true })); //Express library's body parsing middleware to make the POST request body human readable
 
 // app.get("/", (req, res) => {
@@ -36,18 +38,17 @@ app.use(express.urlencoded({ extended: true })); //Express library's body parsin
 //   res.send(`a = ${a}`);
 // })
 
-app.get("/urls", (req, res) => {
+//BROWSE
+
+app.get("/urls", (req, res) => { //A list of created shortURLs with corresponding longURLS (homepage);
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
+//ADD
+
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
-});
-
-app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
-  res.render("urls_show", templateVars);
 });
 
 app.post("/urls", (req, res) => {
@@ -57,10 +58,28 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${id}`)
 });
 
+//READ
+
+app.get("/urls/:id", (req, res) => {
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  res.render("urls_show", templateVars);
+});
+
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
+
+//EDIT
+
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL; //Update id:longURL pair in urlDatabase;
+  console.log(urlDatabase);
+  res.redirect(`/urls`)
+});
+
+
+//DELETE
 
 app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];

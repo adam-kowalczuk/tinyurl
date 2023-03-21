@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
+
 function generateRandomString() { //Creates a random 6-character string to be used as a shortURL
   return (Math.random() + 1).toString(36).substring(6);
 };
@@ -14,17 +15,17 @@ const urlDatabase = {
 
 app.use(express.urlencoded({ extended: true })); //Express library's body parsing middleware to make the POST request body human readable
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+// app.get("/", (req, res) => {
+//   res.send("Hello!");
+// });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+// app.get("/hello", (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n");
+// });
 
 // app.get("/set", (req, res) => {
 //   const a = 1;
@@ -50,8 +51,11 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-  res.send("OK");
+  const id = generateRandomString();
+  console.log("id", id);
+  console.log(req.body.longURL);
+  urlDatabase[id] = req.body.longURL;
+  console.log(urlDatabase);
 });
 
 app.listen(PORT, () => {

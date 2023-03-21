@@ -52,9 +52,14 @@ app.get("/urls/:id", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const id = generateRandomString();
-  urlDatabase[id] = req.body.longURL;
+  urlDatabase[id] = req.body.longURL; //Add generated-id:longURL pair to urlDatabase;
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`)
+});
+
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL);
 });
 
 app.listen(PORT, () => {

@@ -13,6 +13,15 @@ function generateRandomString() { //Creates a random 6-character string to be us
   return (Math.random() + 1).toString(36).substring(6);
 };
 
+const getUserByEmail = function(newEmail) {
+  for (const user in users) {
+    if (users[user].email === newEmail) {
+      return users[user];
+    }
+  }
+  return null;
+};
+
 //GLOBAL OBJECTS
 
 const urlDatabase = {
@@ -51,20 +60,6 @@ app.get("/urls", (req, res) => { //A list of generated shortURLs with correspond
 
 //ADD
 
-app.get("/urls/new", (req, res) => { //Renders template for creating new shortURLs
-  const templateVars = {
-    user: users[req.cookies["user_id"]]
-  };
-  res.render("urls_new", templateVars);
-});
-
-app.get("/register", (req, res) => { //Renders template for registering a new user
-  const templateVars = {
-    user: users[req.cookies["user_id"]]
-  };
-  res.render("register", templateVars);
-});
-
 app.post("/urls", (req, res) => { //Adds generated-id:longURL pair to urlDatabase
   const id = generateRandomString();
   urlDatabase[id] = req.body.longURL;
@@ -82,11 +77,22 @@ app.post("/register", (req, res) => { //Creates object of user info (id, email, 
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  const existentUser = getUserByEmail(email);
+
+  if (!email || !password) {
+    return res.status(400).send("Please provide an email and a password");
+  }
+
+  if (existentUser) {
+    res.status(400).send("Email unavailable");
+  }
+
   let user = {
     id,
     email,
     password
   };
+
   users[id] = user;
 
   res.cookie("user_id", id); //Creates user_id cookie
@@ -95,6 +101,20 @@ app.post("/register", (req, res) => { //Creates object of user info (id, email, 
 });
 
 //READ
+
+app.get("/urls/new", (req, res) => { //Renders template for creating new shortURLs
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("urls_new", templateVars);
+});
+
+app.get("/register", (req, res) => { //Renders template for registering a new user
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("register", templateVars);
+});
 
 app.get("/urls/:id", (req, res) => { //Renders template showing information for particular shortURL
   const templateVars = {

@@ -16,9 +16,9 @@ const urlDatabase = {
 };
 
 //MIDDLEWARE
-
 app.use(express.urlencoded({ extended: true })); //Express library's body parsing middleware to make the POST request body human readable
-app.use(cookieParser);
+app.use(cookieParser());
+
 
 // app.get("/", (req, res) => {
 //   res.send("Hello!");
@@ -104,6 +104,8 @@ app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
+
+//LISTEN
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

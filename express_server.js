@@ -43,34 +43,44 @@ app.use(cookieParser);
 
 //BROWSE
 
-app.get("/urls", (req, res) => { //A list of created shortURLs with corresponding longURLS (homepage);
-  const templateVars = { urls: urlDatabase };
+app.get("/urls", (req, res) => { //A list of generated shortURLs with corresponding longURLS (homepage);
+  const templateVars = {
+    username: req.cookies["username"],
+    urls: urlDatabase
+  };
   res.render("urls_index", templateVars);
 });
 
 //ADD
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies["username"]
+  };
+  res.render("urls_new", templateVars);
 });
 
 app.post("/urls", (req, res) => {
   const id = generateRandomString();
   urlDatabase[id] = req.body.longURL; //Add generated-id:longURL pair to urlDatabase;
   console.log(urlDatabase);
-  res.redirect(`/urls/${id}`)
+  res.redirect(`/urls/${id}`);
 });
 
 app.post("/login", (req, res) => {
   res.cookie("username", `${req.body.username}`);
   console.log(`User ${req.body.username} logged in!`);
   res.redirect("/urls");
-})
+});
 
 //READ
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = {
+    id: req.params.id,
+    longURL: urlDatabase[req.params.id],
+    username: req.cookies["username"]
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -84,7 +94,7 @@ app.get("/u/:id", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL; //Update id:longURL pair in urlDatabase;
   console.log(urlDatabase);
-  res.redirect(`/urls`)
+  res.redirect(`/urls`);
 });
 
 
@@ -93,7 +103,7 @@ app.post("/urls/:id", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
-})
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

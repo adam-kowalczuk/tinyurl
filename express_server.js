@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const morgan = require("morgan")
 
 const app = express();
 const PORT = 8080;
@@ -36,6 +37,7 @@ const users = {
 
 app.use(express.urlencoded({ extended: true })); //Express library's body parsing middleware to make the POST request body human readable
 app.use(cookieParser()); //Populates req.cookie
+app.use(morgan("dev")); //Prints dev updates to server
 
 //BROWSE
 

@@ -60,6 +60,13 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+app.get("/register", (req, res) => {
+  const templateVars = {
+    username: req.cookies["username"]
+  };
+  res.render("register", templateVars);
+});
+
 app.post("/urls", (req, res) => {
   const id = generateRandomString();
   urlDatabase[id] = req.body.longURL; //Add generated-id:longURL pair to urlDatabase;
@@ -72,6 +79,10 @@ app.post("/login", (req, res) => {
   console.log(`User ${req.body.username} logged in!`);
   res.redirect("/urls");
 });
+
+// app.post("/register", (req, res) => {
+
+// })
 
 //READ
 

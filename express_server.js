@@ -78,9 +78,19 @@ app.post("/login", (req, res) => { //Creates coookie from user login submission
   res.redirect("/urls");
 });
 
-// app.post("/register", (req, res) => {
-
-// })
+app.post("/register", (req, res) => { //Creates object of user info (id, email, password) and adds it users database
+  const id = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+  let user_id = {
+    id,
+    email,
+    password
+  }
+  users[id] = user_id;
+  console.log(users);
+  res.redirect("/urls");
+})
 
 //READ
 

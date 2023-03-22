@@ -1,6 +1,6 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
-const morgan = require("morgan")
+const morgan = require("morgan");
 
 const app = express();
 const PORT = 8080;
@@ -43,7 +43,7 @@ app.use(morgan("dev")); //Prints dev updates to server
 
 app.get("/urls", (req, res) => { //A list of generated shortURLs with corresponding longURLS (homepage);
   const templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
@@ -53,21 +53,21 @@ app.get("/urls", (req, res) => { //A list of generated shortURLs with correspond
 
 app.get("/urls/new", (req, res) => { //Renders template for creating new shortURLs
   const templateVars = {
-    username: req.cookies["username"]
+    user: users[req.cookies["user_id"]]
   };
   res.render("urls_new", templateVars);
 });
 
 app.get("/register", (req, res) => { //Renders template for registering a new user
   const templateVars = {
-    username: req.cookies["username"]
+    user: users[req.cookies["user_id"]]
   };
   res.render("register", templateVars);
 });
 
 app.post("/urls", (req, res) => { //Adds generated-id:longURL pair to urlDatabase
   const id = generateRandomString();
-  urlDatabase[id] = req.body.longURL; 
+  urlDatabase[id] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
@@ -82,15 +82,17 @@ app.post("/register", (req, res) => { //Creates object of user info (id, email, 
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
-  let user_id = {
+  let user = {
     id,
     email,
     password
-  }
-  users[id] = user_id;
-  console.log(users);
+  };
+  users[id] = user;
+
+  res.cookie("user_id", id); //Creates user_id cookie
+
   res.redirect("/urls");
-})
+});
 
 //READ
 
@@ -98,7 +100,7 @@ app.get("/urls/:id", (req, res) => { //Renders template showing information for 
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    username: req.cookies["username"]
+    user: users[req.cookies["user_id"]]
   };
   res.render("urls_show", templateVars);
 });
@@ -111,7 +113,7 @@ app.get("/u/:id", (req, res) => { //Redirects user to longURL stored in shortURL
 //EDIT
 
 app.post("/urls/:id", (req, res) => { //Updates id:longURL pair in urlDatabase
-  urlDatabase[req.params.id] = req.body.longURL; 
+  urlDatabase[req.params.id] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls`);
 });
@@ -127,7 +129,7 @@ app.post("/urls/:id/delete", (req, res) => { //Deletes shortURL:longURL from url
 app.post("/logout", (req, res) => { //Clears login cookie 
   res.clearCookie("username");
   res.redirect("/urls");
-})
+});
 
 //LISTEN
 

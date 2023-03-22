@@ -58,6 +58,12 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${id}`)
 });
 
+app.post("/login", (req, res) => {
+  res.cookie("username", `${req.body.username}`);
+  console.log(`User ${req.body.username} logged in!`);
+  res.redirect("/urls");
+})
+
 //READ
 
 app.get("/urls/:id", (req, res) => {

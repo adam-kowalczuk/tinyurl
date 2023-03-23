@@ -7,6 +7,32 @@ const PORT = 8080;
 
 app.set("view engine", "ejs"); //Tells Express to use EJS as it's templating engine
 
+//GLOBAL OBJECTS
+
+const urlDatabase = {
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "abc"
+  },
+  "9sm5xk": {
+    longURL: "http://www.google.com",
+    userID: "def"
+  }
+};
+
+const users = {
+  abc: {
+    id: "abc",
+    email: "a@a.com",
+    password: "1234",
+  },
+  def: {
+    id: "def",
+    email: "b@b.com",
+    password: "1234",
+  },
+};
+
 //GLOBAL FUNCTIONS
 
 //Creates a random string to be used as a shortURL
@@ -58,32 +84,6 @@ const urlsForUser = function(id) {
   return matchingURLS;
 };
 
-//GLOBAL OBJECTS
-
-const urlDatabase = {
-  "b2xVn2": {
-    longURL: "http://www.lighthouselabs.ca",
-    userID: "abc"
-  },
-  "9sm5xk": {
-    longURL: "http://www.google.com",
-    userID: "def"
-  }
-};
-
-const users = {
-  abc: {
-    id: "abc",
-    email: "a@a.com",
-    password: "1234",
-  },
-  def: {
-    id: "def",
-    email: "b@b.com",
-    password: "1234",
-  },
-};
-
 //MIDDLEWARE
 
 app.use(express.urlencoded({ extended: true })); //Express library's body parsing middleware to make the POST request body human readable
@@ -95,9 +95,6 @@ app.use(morgan("dev")); //Prints dev updates to server
 //A list of generated shortURLs with corresponding longURLS;
 app.get("/urls", (req, res) => {
   const user = getUserByID(req.cookies["user_id"]);
-  if (!user) {
-    return res.status(403).send("403 Forbidden: Please sign in to view list of URLs");
-  }
 
   const urls = urlsForUser(req.cookies["user_id"]);
   if (urls) {
@@ -264,6 +261,7 @@ app.post("/urls/:id/delete", (req, res) => {
 //Clears user_id cookie 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
+  console.log(users);
   res.redirect("/login");
 });
 

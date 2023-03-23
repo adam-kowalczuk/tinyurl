@@ -44,6 +44,7 @@ const getShortURL = function(shortURL) {
   return null;
 };
 
+//Check for any urls with matching userID, and if so returns an object of those urls
 const urlsForUser = function(id) {
   matchingURLS = {};
   for (const url in urlDatabase) {
@@ -53,7 +54,7 @@ const urlsForUser = function(id) {
   }
   if (matchingURLS === {}) {
     return null;
-  } 
+  }
   return matchingURLS;
 };
 
@@ -213,12 +214,24 @@ app.get("/login", (req, res) => {
 
 //Renders template showing information for particular shortURL
 app.get("/urls/:id", (req, res) => {
+  const user = getUserByID(req.cookies["user_id"]);
+  if (!user) {
+    return res.status(403).send("403 Forbidden: Please login in to view shortURL info");
+  }
+
+  const urls = urlsForUser(req.cookies["user_id"]);
+  if (!urls[req.params.id]) {
+    return res.status(403).send("403 Forbidden: Current user access denied");
+  }
+  
+  console.log("urls", urls);
+
   const templateVars = {
+    user,
     id: req.params.id,
-    longURL: urlDatabase[req.params.id].longURL,
-    user: users[req.cookies["user_id"]]
+    longURL: urls[req.params.id].longURL
   };
-  res.render("urls_show", templateVars);
+  return res.render("urls_show", templateVars);
 });
 
 //Redirects user to longURL stored in shortURL

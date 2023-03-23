@@ -24,6 +24,26 @@ const getUserByEmail = function(newEmail) {
   return null;
 };
 
+//Checks to see if ID is registered (used for checking if user is logged in)
+const getUserByID = function(loggedID) { 
+  for (const user in users) {
+    if (users[user].id === loggedID) {
+      return users[user];
+    }
+  }
+  return null;
+};
+
+//Checks whether shortURL exists
+const getShortURL = function(shortURL) { 
+  for (const url in urlDatabase) {
+    if (url === shortURL) {
+      return url;
+    }
+  }
+  return null;
+};
+
 //GLOBAL OBJECTS
 
 const urlDatabase = {
@@ -63,15 +83,19 @@ app.get("/urls", (req, res) => {
 
 //ADD
 
-//Adds generated-id:longURL pair to urlDatabase
+//Creates and adds generated-shortURL:longURL pair to urlDatabase
 app.post("/urls", (req, res) => { 
+  const user = getUserByID(req.cookies["user_id"])
+  if (!user) {
+    return res.status(403).send("403 Forbidden: Only registered users may create shortURLs" )
+  }
   const id = generateRandomString();
   urlDatabase[id] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
 
-//Checks if email or password input is undefined, user exists, and password is correct length. If all check pass, creates object of user info (id, email, password) and adds it to users database
+//Checks if email or password input is undefined, user exists, and password is correct length. If all checks pass, creates object of user info (id, email, password) and adds it to users database
 app.post("/register", (req, res) => { 
   const id = generateRandomString();
   const email = req.body.email;
@@ -102,7 +126,7 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 });
 
-//Checks if user exists and if password matches. If both check pass, creates user_id cookie and sends user back to /urls
+//Checks if user exists and if password matches. If both checks pass, creates user_id cookie and sends user back to /urls
 app.post("/login", (req, res) => { 
   const email = req.body.email;
   const password = req.body.password;
@@ -125,24 +149,37 @@ app.post("/login", (req, res) => {
 
 //Renders template for creating new shortURLs
 app.get("/urls/new", (req, res) => { 
+  const user = getUserByID(req.cookies["user_id"])
+  if (!user) {
+    return res.redirect("/login")
+  }
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user
   };
   res.render("urls_new", templateVars);
 });
 
-//Renders template for registering a new user
+//Renders template for registering a new user (redirects to /urls if already registered)
 app.get("/register", (req, res) => { 
+  const user = getUserByID(req.cookies["user_id"])
+  if (user) {
+    return res.redirect("/urls")
+  }
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    // user: users[req.cookies["user_id"]]
+    user
   };
   res.render("register", templateVars);
 });
 
-//Renders template for logging in
+//Renders template for logging in (redirects to /urls if already logged in)
 app.get("/login", (req, res) => { 
+  const user = getUserByID(req.cookies["user_id"])
+  if (user) {
+    return res.redirect("/urls")
+  }
   const templateVars = {
-    user: users[req.cookies["user_id"]]
+    user
   };
   res.render("login", templateVars);
 });
@@ -159,10 +196,13 @@ app.get("/urls/:id", (req, res) => {
 
 //Redirects user to longURL stored in shortURL
 app.get("/u/:id", (req, res) => { 
+  const id = getShortURL(req.params.id);
+  if (!id) {
+    return res.status(404).send("404 Not Found: shortURL does not exist");
+  }
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
-
 
 //EDIT
 
@@ -172,7 +212,6 @@ app.post("/urls/:id", (req, res) => {
   console.log(urlDatabase);
   res.redirect(`/urls`);
 });
-
 
 //DELETE
 

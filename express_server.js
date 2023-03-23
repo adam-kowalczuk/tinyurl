@@ -9,11 +9,13 @@ app.set("view engine", "ejs"); //Tells Express to use EJS as it's templating eng
 
 //GLOBAL FUNCTIONS
 
-function generateRandomString() { //Creates a random 6-character string to be used as a shortURL
+//Creates a random string to be used as a shortURL
+const generateRandomString = function() { 
   return (Math.random() + 1).toString(36).substring(6);
 };
 
-const getUserByEmail = function(newEmail) {
+//Checks to see if email is already in use
+const getUserByEmail = function(newEmail) { 
   for (const user in users) {
     if (users[user].email === newEmail) {
       return users[user];
@@ -50,7 +52,8 @@ app.use(morgan("dev")); //Prints dev updates to server
 
 //BROWSE
 
-app.get("/urls", (req, res) => { //A list of generated shortURLs with corresponding longURLS (homepage);
+//A list of generated shortURLs with corresponding longURLS;
+app.get("/urls", (req, res) => { 
   const templateVars = {
     user: users[req.cookies["user_id"]],
     urls: urlDatabase
@@ -60,35 +63,31 @@ app.get("/urls", (req, res) => { //A list of generated shortURLs with correspond
 
 //ADD
 
-app.post("/urls", (req, res) => { //Adds generated-id:longURL pair to urlDatabase
+//Adds generated-id:longURL pair to urlDatabase
+app.post("/urls", (req, res) => { 
   const id = generateRandomString();
   urlDatabase[id] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
 
-app.post("/login", (req, res) => { //Creates coookie from user login submission
-  res.cookie("username", `${req.body.username}`);
-  console.log(`User ${req.body.username} logged in!`);
-  res.redirect("/urls");
-});
-
-app.post("/register", (req, res) => { //Creates object of user info (id, email, password) and adds it users database
+//Checks if email or password input is undefined, user exists, and password is correct length. If all check pass, creates object of user info (id, email, password) and adds it to users database
+app.post("/register", (req, res) => { 
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
   const existentUser = getUserByEmail(email);
 
   if (!email || !password) {
-    return res.status(400).send("Please provide an email and a password");
+    return res.status(400).send("400 Bad Request: Please provide an email and a password");
   }
 
   if (existentUser) {
-    return res.status(400).send("Email unavailable");
+    return res.status(400).send("400 Bad Request: Email unavailable");
   }
 
   if (password.length < 4 || password.length > 12) {
-    return res.status(400).send("Please provide a password between 4 and 12 characters");
+    return res.status(400).send("400 Bad Request: Please provide a password between 4 and 12 characters");
   }
 
   let user = {
@@ -96,39 +95,60 @@ app.post("/register", (req, res) => { //Creates object of user info (id, email, 
     email,
     password
   };
-
   users[id] = user;
 
-  res.cookie("user_id", id); //Creates user_id cookie
+  //Creates user_id cookie
+  res.cookie("user_id", id); 
+  res.redirect("/urls");
+});
 
+//Checks if user exists and if password matches. If both check pass, creates user_id cookie and sends user back to /urls
+app.post("/login", (req, res) => { 
+  const email = req.body.email;
+  const password = req.body.password;
+  const existentUser = getUserByEmail(email);
+
+  if (!existentUser) {
+    return res.status(403).send("403 Forbidden: User not found");
+  };
+
+  if (existentUser.password !== password) {
+    return res.status(403).send("403 Forbidden: Invalid password");
+  }
+
+  //Creates user_id cookie
+  res.cookie("user_id", existentUser.id); 
   res.redirect("/urls");
 });
 
 //READ
 
-app.get("/urls/new", (req, res) => { //Renders template for creating new shortURLs
+//Renders template for creating new shortURLs
+app.get("/urls/new", (req, res) => { 
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
   res.render("urls_new", templateVars);
-  console.log(users);
 });
 
-app.get("/register", (req, res) => { //Renders template for registering a new user
+//Renders template for registering a new user
+app.get("/register", (req, res) => { 
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
   res.render("register", templateVars);
 });
 
-app.get("/login", (req, res) => {
+//Renders template for logging in
+app.get("/login", (req, res) => { 
   const templateVars = {
     user: users[req.cookies["user_id"]]
   };
   res.render("login", templateVars);
 });
 
-app.get("/urls/:id", (req, res) => { //Renders template showing information for particular shortURL
+//Renders template showing information for particular shortURL
+app.get("/urls/:id", (req, res) => { 
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
@@ -137,7 +157,8 @@ app.get("/urls/:id", (req, res) => { //Renders template showing information for 
   res.render("urls_show", templateVars);
 });
 
-app.get("/u/:id", (req, res) => { //Redirects user to longURL stored in shortURL
+//Redirects user to longURL stored in shortURL
+app.get("/u/:id", (req, res) => { 
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
@@ -145,7 +166,8 @@ app.get("/u/:id", (req, res) => { //Redirects user to longURL stored in shortURL
 
 //EDIT
 
-app.post("/urls/:id", (req, res) => { //Updates id:longURL pair in urlDatabase
+//Updates shortURL:longURL pair in urlDatabase
+app.post("/urls/:id", (req, res) => { 
   urlDatabase[req.params.id] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls`);
@@ -154,17 +176,19 @@ app.post("/urls/:id", (req, res) => { //Updates id:longURL pair in urlDatabase
 
 //DELETE
 
-app.post("/urls/:id/delete", (req, res) => { //Deletes shortURL:longURL from urlDatabase
+//Deletes shortURL:longURL from urlDatabase
+app.post("/urls/:id/delete", (req, res) => { 
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
-app.post("/logout", (req, res) => { //Clears login cookie 
+//Clears user_id cookie 
+app.post("/logout", (req, res) => { 
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
-//LISTEN
+//TURN THE SERVER ON
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

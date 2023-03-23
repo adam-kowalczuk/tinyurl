@@ -84,7 +84,11 @@ app.post("/register", (req, res) => { //Creates object of user info (id, email, 
   }
 
   if (existentUser) {
-    res.status(400).send("Email unavailable");
+    return res.status(400).send("Email unavailable");
+  }
+
+  if (password.length < 4 || password.length > 12) {
+    return res.status(400).send("Please provide a password between 4 and 12 characters");
   }
 
   let user = {
@@ -107,6 +111,7 @@ app.get("/urls/new", (req, res) => { //Renders template for creating new shortUR
     user: users[req.cookies["user_id"]]
   };
   res.render("urls_new", templateVars);
+  console.log(users);
 });
 
 app.get("/register", (req, res) => { //Renders template for registering a new user
@@ -114,6 +119,13 @@ app.get("/register", (req, res) => { //Renders template for registering a new us
     user: users[req.cookies["user_id"]]
   };
   res.render("register", templateVars);
+});
+
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("login", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => { //Renders template showing information for particular shortURL
@@ -129,6 +141,7 @@ app.get("/u/:id", (req, res) => { //Redirects user to longURL stored in shortURL
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
+
 
 //EDIT
 
@@ -147,7 +160,7 @@ app.post("/urls/:id/delete", (req, res) => { //Deletes shortURL:longURL from url
 });
 
 app.post("/logout", (req, res) => { //Clears login cookie 
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 

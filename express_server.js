@@ -10,12 +10,12 @@ app.set("view engine", "ejs"); //Tells Express to use EJS as it's templating eng
 //GLOBAL FUNCTIONS
 
 //Creates a random string to be used as a shortURL
-const generateRandomString = function() { 
+const generateRandomString = function() {
   return (Math.random() + 1).toString(36).substring(6);
 };
 
 //Checks to see if email is already in use
-const getUserByEmail = function(newEmail) { 
+const getUserByEmail = function(newEmail) {
   for (const user in users) {
     if (users[user].email === newEmail) {
       return users[user];
@@ -25,7 +25,7 @@ const getUserByEmail = function(newEmail) {
 };
 
 //Checks to see if ID is registered (used for checking if user is logged in)
-const getUserByID = function(loggedID) { 
+const getUserByID = function(loggedID) {
   for (const user in users) {
     if (users[user].id === loggedID) {
       return users[user];
@@ -35,7 +35,7 @@ const getUserByID = function(loggedID) {
 };
 
 //Checks whether shortURL exists
-const getShortURL = function(shortURL) { 
+const getShortURL = function(shortURL) {
   for (const url in urlDatabase) {
     if (url === shortURL) {
       return url;
@@ -44,11 +44,30 @@ const getShortURL = function(shortURL) {
   return null;
 };
 
+const urlsForUser = function(id) {
+  matchingURLS = {};
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      matchingURLS[url] = urlDatabase[url];
+    }
+  }
+  if (matchingURLS === {}) {
+    return null;
+  } 
+  return matchingURLS;
+};
+
 //GLOBAL OBJECTS
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xk": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "abc"
+  },
+  "9sm5xk": {
+    longURL: "http://www.google.com",
+    userID: "def"
+  }
 };
 
 const users = {
@@ -73,30 +92,39 @@ app.use(morgan("dev")); //Prints dev updates to server
 //BROWSE
 
 //A list of generated shortURLs with corresponding longURLS;
-app.get("/urls", (req, res) => { 
-  const templateVars = {
-    user: users[req.cookies["user_id"]],
-    urls: urlDatabase
-  };
-  res.render("urls_index", templateVars);
+app.get("/urls", (req, res) => {
+  const user = getUserByID(req.cookies["user_id"]);
+  if (!user) {
+    return res.status(403).send("403 Forbidden: Please sign in to view list of URLs");
+  }
+
+  const urls = urlsForUser(req.cookies["user_id"]);
+  if (urls) {
+    const templateVars = {
+      user,
+      urls
+    };
+    console.log(templateVars);
+    return res.render("urls_index", templateVars);
+  }
 });
 
 //ADD
 
 //Creates and adds generated-shortURL:longURL pair to urlDatabase
-app.post("/urls", (req, res) => { 
-  const user = getUserByID(req.cookies["user_id"])
+app.post("/urls", (req, res) => {
+  const user = getUserByID(req.cookies["user_id"]);
   if (!user) {
-    return res.status(403).send("403 Forbidden: Only registered users may create shortURLs" )
+    return res.status(403).send("403 Forbidden: Only registered users may create shortURLs");
   }
   const id = generateRandomString();
-  urlDatabase[id] = req.body.longURL;
+  urlDatabase[id] = { longURL: req.body.longURL, userID: user.id };
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
 
 //Checks if email or password input is undefined, user exists, and password is correct length. If all checks pass, creates object of user info (id, email, password) and adds it to users database
-app.post("/register", (req, res) => { 
+app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
@@ -122,12 +150,12 @@ app.post("/register", (req, res) => {
   users[id] = user;
 
   //Creates user_id cookie
-  res.cookie("user_id", id); 
+  res.cookie("user_id", id);
   res.redirect("/urls");
 });
 
 //Checks if user exists and if password matches. If both checks pass, creates user_id cookie and sends user back to /urls
-app.post("/login", (req, res) => { 
+app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const existentUser = getUserByEmail(email);
@@ -141,17 +169,17 @@ app.post("/login", (req, res) => {
   }
 
   //Creates user_id cookie
-  res.cookie("user_id", existentUser.id); 
+  res.cookie("user_id", existentUser.id);
   res.redirect("/urls");
 });
 
 //READ
 
 //Renders template for creating new shortURLs
-app.get("/urls/new", (req, res) => { 
-  const user = getUserByID(req.cookies["user_id"])
+app.get("/urls/new", (req, res) => {
+  const user = getUserByID(req.cookies["user_id"]);
   if (!user) {
-    return res.redirect("/login")
+    return res.redirect("/login");
   }
   const templateVars = {
     user
@@ -160,23 +188,22 @@ app.get("/urls/new", (req, res) => {
 });
 
 //Renders template for registering a new user (redirects to /urls if already registered)
-app.get("/register", (req, res) => { 
-  const user = getUserByID(req.cookies["user_id"])
+app.get("/register", (req, res) => {
+  const user = getUserByID(req.cookies["user_id"]);
   if (user) {
-    return res.redirect("/urls")
+    return res.redirect("/urls");
   }
   const templateVars = {
-    // user: users[req.cookies["user_id"]]
     user
   };
   res.render("register", templateVars);
 });
 
 //Renders template for logging in (redirects to /urls if already logged in)
-app.get("/login", (req, res) => { 
-  const user = getUserByID(req.cookies["user_id"])
+app.get("/login", (req, res) => {
+  const user = getUserByID(req.cookies["user_id"]);
   if (user) {
-    return res.redirect("/urls")
+    return res.redirect("/urls");
   }
   const templateVars = {
     user
@@ -185,30 +212,30 @@ app.get("/login", (req, res) => {
 });
 
 //Renders template showing information for particular shortURL
-app.get("/urls/:id", (req, res) => { 
+app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: urlDatabase[req.params.id].longURL,
     user: users[req.cookies["user_id"]]
   };
   res.render("urls_show", templateVars);
 });
 
 //Redirects user to longURL stored in shortURL
-app.get("/u/:id", (req, res) => { 
+app.get("/u/:id", (req, res) => {
   const id = getShortURL(req.params.id);
   if (!id) {
     return res.status(404).send("404 Not Found: shortURL does not exist");
   }
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
 
 //EDIT
 
 //Updates shortURL:longURL pair in urlDatabase
-app.post("/urls/:id", (req, res) => { 
-  urlDatabase[req.params.id] = req.body.longURL;
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id].longURL = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls`);
 });
@@ -216,13 +243,13 @@ app.post("/urls/:id", (req, res) => {
 //DELETE
 
 //Deletes shortURL:longURL from urlDatabase
-app.post("/urls/:id/delete", (req, res) => { 
+app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
 //Clears user_id cookie 
-app.post("/logout", (req, res) => { 
+app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
   res.redirect("/login");
 });

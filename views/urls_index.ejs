@@ -13,6 +13,9 @@
 <body>
   <%- include('partials/_header') %>
   <main style="margin: 1em;">
+    <% if(!user){%>
+      <h3>Please log in to view your URLs</h3>
+    <%} else{ %>
     <h3>My URLs</h3>
     <table class="table">
       <thead>
@@ -42,6 +45,7 @@
           <% } %>
       </tbody>
     </table>
+    <% } %>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

@@ -72,13 +72,13 @@ const getShortURL = function(shortURL) {
 
 //Check for any urls with matching userID, and if so returns an object of those urls
 const urlsForUser = function(id) {
-  matchingURLS = {};
+  let matchingURLS = {};
   for (const url in urlDatabase) {
     if (urlDatabase[url].userID === id) {
       matchingURLS[url] = urlDatabase[url];
     }
   }
-  if (matchingURLS === {}) {
+  if (!Object.keys(matchingURLS).length) {
     return null;
   }
   return matchingURLS;
@@ -97,14 +97,15 @@ app.get("/urls", (req, res) => {
   const user = getUserByID(req.cookies["user_id"]);
 
   const urls = urlsForUser(req.cookies["user_id"]);
-  if (urls) {
-    const templateVars = {
-      user,
-      urls
-    };
-    console.log(templateVars);
-    return res.render("urls_index", templateVars);
-  }
+//   if (urls) {
+//   }
+// });
+const templateVars = {
+  user,
+  urls
+};
+console.log(templateVars);
+return res.render("urls_index", templateVars);
 });
 
 //ADD
@@ -116,7 +117,7 @@ app.post("/urls", (req, res) => {
     return res.status(403).send("403 Forbidden: Only registered users may create shortURLs");
   }
   const id = generateRandomString();
-  urlDatabase[id] = { longURL: req.body.longURL, userID: user.id };
+  urlDatabase[id] = { longURL: req.body.longURL, userID: req.cookies["user_id"] };
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
@@ -217,10 +218,10 @@ app.get("/urls/:id", (req, res) => {
   }
 
   const urls = urlsForUser(req.cookies["user_id"]);
-  if (!urls[req.params.id]) {
+  if (!urls) {
     return res.status(403).send("403 Forbidden: Current user access denied");
   }
-  
+
   console.log("urls", urls);
 
   const templateVars = {
@@ -245,6 +246,21 @@ app.get("/u/:id", (req, res) => {
 
 //Updates shortURL:longURL pair in urlDatabase
 app.post("/urls/:id", (req, res) => {
+  const shortURL = getShortURL(req.params.id);
+  const user = getUserByID(req.cookies["user_id"]);
+  const urls = urlsForUser(req.cookies["user_id"]);
+
+  if (!shortURL) {
+    return res.status(400).send("404 Not Found: shortURL does not exist");
+  }
+  if (!user) {
+    return res.status(401).send("401 Unauthorized: Please sign in to edit shortURL")
+  }
+  if (!urls) {
+    return res.status(401).send("401 Unauthorized: Please sign in to edit your own shortURL")
+  }
+  
+
   urlDatabase[req.params.id].longURL = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls`);

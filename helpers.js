@@ -4,7 +4,7 @@ const generateRandomString = function() {
 };
 
 //Checks to see if ID is registered (used for checking if user is logged in)
-const getUserByID = function(loggedID) {
+const getUserByID = function(loggedID, users) {
   for (const user in users) {
     if (users[user].id === loggedID) {
       return users[user];
@@ -14,8 +14,8 @@ const getUserByID = function(loggedID) {
 };
 
 //Checks whether shortURL exists
-const getShortURL = function(shortURL) {
-  for (const url in urlDatabase) {
+const getShortURL = function(shortURL, urls) {
+  for (const url in urls) {
     if (url === shortURL) {
       return url;
     }
@@ -34,11 +34,11 @@ const getUserByEmail = function(email, users) {
 };
 
 //Check for any urls with matching userID, and if so returns an object of those urls
-const urlsForUser = function(id) {
+const urlsForUser = function(id, urls) {
   let matchingURLS = {};
-  for (const url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      matchingURLS[url] = urlDatabase[url];
+  for (const url in urls) {
+    if (urls[url].userID === id) {
+      matchingURLS[url] = urls[url];
     }
   }
   if (!Object.keys(matchingURLS).length) {
@@ -47,28 +47,10 @@ const urlsForUser = function(id) {
   return matchingURLS;
 };
 
-
-const testUsers = {
-  "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
-  },
-  "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
-  }
-};
-
-const user = getUserByEmail("user@example.com", testUsers)
-console.log(user.id);
-
-
 module.exports = {
   generateRandomString,
-  getUserByEmail,
-  getUserByID,
   getShortURL,
+  getUserByID,
+  getUserByEmail,
   urlsForUser
-}
+};

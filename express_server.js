@@ -3,6 +3,7 @@ const express = require("express");
 const cookieSession = require("cookie-session");
 const morgan = require("morgan");
 const bcrypt = require("bcryptjs");
+const { getUserByEmail } = require("./helpers")
 
 const app = express();
 const PORT = 8080;
@@ -45,14 +46,14 @@ const generateRandomString = function() {
 };
 
 //Checks to see if email is already in use
-const getUserByEmail = function(email, users) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return users[user];
-    }
-  }
-  return null;
-};
+// const getUserByEmail = function(email, users) {
+//   for (const user in users) {
+//     if (users[user].email === email) {
+//       return users[user];
+//     }
+//   }
+//   return null;
+// };
 
 //Checks to see if ID is registered (used for checking if user is logged in)
 const getUserByID = function(loggedID) {

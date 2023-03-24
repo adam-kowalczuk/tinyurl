@@ -3,7 +3,7 @@ const express = require("express");
 const cookieSession = require("cookie-session");
 const morgan = require("morgan");
 const bcrypt = require("bcryptjs");
-const { getUserByEmail } = require("./helpers")
+const { generateRandomString, getUserByEmail, getUserByID, getShortURL, urlsForUser } = require("./helpers") //Helper functions
 
 const app = express();
 const PORT = 8080;
@@ -44,16 +44,6 @@ const users = {
 const generateRandomString = function() {
   return (Math.random() + 1).toString(36).substring(6);
 };
-
-//Checks to see if email is already in use
-// const getUserByEmail = function(email, users) {
-//   for (const user in users) {
-//     if (users[user].email === email) {
-//       return users[user];
-//     }
-//   }
-//   return null;
-// };
 
 //Checks to see if ID is registered (used for checking if user is logged in)
 const getUserByID = function(loggedID) {

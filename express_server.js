@@ -45,9 +45,9 @@ const generateRandomString = function() {
 };
 
 //Checks to see if email is already in use
-const getUserByEmail = function(newEmail) {
+const getUserByEmail = function(email, users) {
   for (const user in users) {
-    if (users[user].email === newEmail) {
+    if (users[user].email === email) {
       return users[user];
     }
   }
@@ -133,7 +133,7 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
-  const existentUser = getUserByEmail(email);
+  const existentUser = getUserByEmail(email, users);
 
   if (!email || !password) {
     return res.status(400).send("400 Bad Request: Please provide an email and a password");
@@ -163,7 +163,7 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const existentUser = getUserByEmail(email);
+  const existentUser = getUserByEmail(email, users);
 
 
   if (!existentUser) {

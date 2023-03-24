@@ -95,17 +95,14 @@ app.use(morgan("dev")); //Prints dev updates to server
 //A list of generated shortURLs with corresponding longURLS;
 app.get("/urls", (req, res) => {
   const user = getUserByID(req.cookies["user_id"]);
-
   const urls = urlsForUser(req.cookies["user_id"]);
-//   if (urls) {
-//   }
-// });
-const templateVars = {
-  user,
-  urls
-};
-console.log(templateVars);
-return res.render("urls_index", templateVars);
+
+  const templateVars = {
+    user,
+    urls
+  };
+  console.log(templateVars);
+  return res.render("urls_index", templateVars);
 });
 
 //ADD
@@ -218,7 +215,7 @@ app.get("/urls/:id", (req, res) => {
   }
 
   const urls = urlsForUser(req.cookies["user_id"]);
-  if (!urls) {
+  if (!urls[req.params.id]) {
     return res.status(403).send("403 Forbidden: Current user access denied");
   }
 
@@ -247,19 +244,20 @@ app.get("/u/:id", (req, res) => {
 //Updates shortURL:longURL pair in urlDatabase
 app.post("/urls/:id", (req, res) => {
   const shortURL = getShortURL(req.params.id);
-  const user = getUserByID(req.cookies["user_id"]);
+  const user = req.cookies["user_id"];
   const urls = urlsForUser(req.cookies["user_id"]);
 
   if (!shortURL) {
-    return res.status(400).send("404 Not Found: shortURL does not exist");
+    return res.status(404).send("404 Not Found: shortURL does not exist");
   }
+
   if (!user) {
-    return res.status(401).send("401 Unauthorized: Please sign in to edit shortURL")
+    return res.status(401).send("401 Unauthorized: Please sign in to edit shortURL");
   }
-  if (!urls) {
-    return res.status(401).send("401 Unauthorized: Please sign in to edit your own shortURL")
+
+  if (!urls[req.params.id]) {
+    return res.status(403).send("403 Forbidden: Do not have access to edit shortURL");
   }
-  
 
   urlDatabase[req.params.id].longURL = req.body.longURL;
   console.log(urlDatabase);
@@ -270,6 +268,22 @@ app.post("/urls/:id", (req, res) => {
 
 //Deletes shortURL:longURL from urlDatabase
 app.post("/urls/:id/delete", (req, res) => {
+  const shortURL = getShortURL(req.params.id);
+  const user = req.cookies["user_id"];
+  const urls = urlsForUser(req.cookies["user_id"]);
+
+  if (!shortURL) {
+    return res.status(404).send("404 Not Found: shortURL does not exist");
+  }
+
+  if (!user) {
+    return res.status(401).send("401 Unauthorized: Please sign in to delete shortURL");
+  }
+
+  if (!urls[req.params.id]) {
+    return res.status(403).send("403 Forbidden: Do not have permission to delete shortURL");
+  }
+
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });

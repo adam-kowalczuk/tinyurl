@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 const PORT = 8080;
@@ -24,12 +25,14 @@ const users = {
   abc: {
     id: "abc",
     email: "a@a.com",
-    password: "1234",
+    //FOR EVALUATOR: Plaintext password is '1234'
+    password: "$2a$10$/KNVWX0qJSrHpKQ42vV5Juqv0G9kRaEnYz6lKiJSCtyZnvQUDpEI6",
   },
   def: {
     id: "def",
     email: "b@b.com",
-    password: "1234",
+    //FOR EVALUATOR: Plaintext password is '5678'
+    password: "$2a$10$8Qxt4EDtL00oRfNfof50uOGxyqsM19HaHWCsutpry1WZDP3Ee69oS",
   },
 };
 
@@ -124,6 +127,7 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   const existentUser = getUserByEmail(email);
 
   if (!email || !password) {
@@ -139,12 +143,12 @@ app.post("/register", (req, res) => {
   }
 
   let user = {
-    id,
-    email,
-    password
+    id: id,
+    email: email,
+    password: hashedPassword
   };
   users[id] = user;
-
+  
   //Creates user_id cookie
   res.cookie("user_id", id);
   res.redirect("/urls");
@@ -155,12 +159,15 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const existentUser = getUserByEmail(email);
+ 
 
   if (!existentUser) {
     return res.status(403).send("403 Forbidden: User not found");
   };
 
-  if (existentUser.password !== password) {
+  const result = bcrypt.compareSync(password, existentUser.password);
+
+  if (!result) {
     return res.status(403).send("403 Forbidden: Invalid password");
   }
 

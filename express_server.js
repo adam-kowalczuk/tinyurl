@@ -1,5 +1,6 @@
 const express = require("express");
-const cookieParser = require("cookie-parser");
+// const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
 const morgan = require("morgan");
 const bcrypt = require("bcryptjs");
 
@@ -90,15 +91,19 @@ const urlsForUser = function(id) {
 //MIDDLEWARE
 
 app.use(express.urlencoded({ extended: true })); //Express library's body parsing middleware to make the POST request body human readable
-app.use(cookieParser()); //Populates req.cookie
 app.use(morgan("dev")); //Prints dev updates to server
+app.use(cookieSession({ //Populates req.session
+  name: 'session',
+  keys: ['secret']
+}))
+
 
 //BROWSE
 
 //A list of generated shortURLs with corresponding longURLS;
 app.get("/urls", (req, res) => {
-  const user = getUserByID(req.cookies["user_id"]);
-  const urls = urlsForUser(req.cookies["user_id"]);
+  const user = getUserByID(req.session.user_id);
+  const urls = urlsForUser(req.session.user_id);
 
   const templateVars = {
     user,
@@ -112,12 +117,12 @@ app.get("/urls", (req, res) => {
 
 //Creates and adds generated-shortURL:longURL pair to urlDatabase
 app.post("/urls", (req, res) => {
-  const user = getUserByID(req.cookies["user_id"]);
+  const user = getUserByID(req.session.user_id);
   if (!user) {
     return res.status(403).send("403 Forbidden: Only registered users may create shortURLs");
   }
   const id = generateRandomString();
-  urlDatabase[id] = { longURL: req.body.longURL, userID: req.cookies["user_id"] };
+  urlDatabase[id] = { longURL: req.body.longURL, userID: req.session.user_id };
   console.log(urlDatabase);
   res.redirect(`/urls/${id}`);
 });
@@ -148,9 +153,9 @@ app.post("/register", (req, res) => {
     password: hashedPassword
   };
   users[id] = user;
-  
+
   //Creates user_id cookie
-  res.cookie("user_id", id);
+  req.session.user_id = id;
   res.redirect("/urls");
 });
 
@@ -159,7 +164,7 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const existentUser = getUserByEmail(email);
- 
+
 
   if (!existentUser) {
     return res.status(403).send("403 Forbidden: User not found");
@@ -172,7 +177,7 @@ app.post("/login", (req, res) => {
   }
 
   //Creates user_id cookie
-  res.cookie("user_id", existentUser.id);
+  req.session.user_id = existentUser.id;
   res.redirect("/urls");
 });
 
@@ -180,7 +185,7 @@ app.post("/login", (req, res) => {
 
 //Renders template for creating new shortURLs
 app.get("/urls/new", (req, res) => {
-  const user = getUserByID(req.cookies["user_id"]);
+  const user = getUserByID(req.session.user_id);
   if (!user) {
     return res.redirect("/login");
   }
@@ -192,7 +197,7 @@ app.get("/urls/new", (req, res) => {
 
 //Renders template for registering a new user (redirects to /urls if already registered)
 app.get("/register", (req, res) => {
-  const user = getUserByID(req.cookies["user_id"]);
+  const user = getUserByID(req.session.user_id);
   if (user) {
     return res.redirect("/urls");
   }
@@ -204,7 +209,7 @@ app.get("/register", (req, res) => {
 
 //Renders template for logging in (redirects to /urls if already logged in)
 app.get("/login", (req, res) => {
-  const user = getUserByID(req.cookies["user_id"]);
+  const user = getUserByID(req.session.user_id);
   if (user) {
     return res.redirect("/urls");
   }
@@ -216,12 +221,12 @@ app.get("/login", (req, res) => {
 
 //Renders template showing information for particular shortURL
 app.get("/urls/:id", (req, res) => {
-  const user = getUserByID(req.cookies["user_id"]);
+  const user = getUserByID(req.session.user_id);
   if (!user) {
     return res.status(403).send("403 Forbidden: Please login in to view shortURL info");
   }
 
-  const urls = urlsForUser(req.cookies["user_id"]);
+  const urls = urlsForUser(req.session.user_id);
   if (!urls[req.params.id]) {
     return res.status(403).send("403 Forbidden: Current user access denied");
   }
@@ -251,8 +256,8 @@ app.get("/u/:id", (req, res) => {
 //Updates shortURL:longURL pair in urlDatabase
 app.post("/urls/:id", (req, res) => {
   const shortURL = getShortURL(req.params.id);
-  const user = req.cookies["user_id"];
-  const urls = urlsForUser(req.cookies["user_id"]);
+  const user = req.session.user_id;
+  const urls = urlsForUser(req.session.user_id);
 
   if (!shortURL) {
     return res.status(404).send("404 Not Found: shortURL does not exist");
@@ -276,8 +281,8 @@ app.post("/urls/:id", (req, res) => {
 //Deletes shortURL:longURL from urlDatabase
 app.post("/urls/:id/delete", (req, res) => {
   const shortURL = getShortURL(req.params.id);
-  const user = req.cookies["user_id"];
-  const urls = urlsForUser(req.cookies["user_id"]);
+  const user = req.session.user_id;
+  const urls = urlsForUser(req.session.user_id);
 
   if (!shortURL) {
     return res.status(404).send("404 Not Found: shortURL does not exist");
@@ -297,7 +302,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 //Clears user_id cookie 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null;
   console.log(users);
   res.redirect("/login");
 });

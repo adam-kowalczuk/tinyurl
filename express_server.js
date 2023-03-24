@@ -2,14 +2,25 @@ const express = require("express");
 const cookieSession = require("cookie-session");
 const morgan = require("morgan");
 const bcrypt = require("bcryptjs");
-//Helper functions available to view in helpers.js
-const { generateRandomString, getUserByEmail, getShortURL, getUserByID, urlsForUser } = require('./helpers'); 
-
 const app = express();
 const PORT = 8080;
+//Helper functions available to view in helpers.js
+const { generateRandomString, getUserByEmail, getShortURL, getUserByID, urlsForUser } = require('./helpers');
 
 //Tells Express to use EJS as it's templating engine
-app.set("view engine", "ejs"); 
+app.set("view engine", "ejs");
+
+//MIDDLEWARE
+
+//Express library's body parsing middleware to make the POST request body human readable
+app.use(express.urlencoded({ extended: true }));
+//Prints dev updates to server
+app.use(morgan("dev"));
+//Populates req.session
+app.use(cookieSession({
+  name: 'session',
+  keys: ['secret']
+}));
 
 //"DATABASES"
 
@@ -39,19 +50,6 @@ const users = {
   },
 };
 
-//MIDDLEWARE
-
-//Express library's body parsing middleware to make the POST request body human readable
-app.use(express.urlencoded({ extended: true })); 
-//Prints dev updates to server
-app.use(morgan("dev")); 
-//Populates req.session
-app.use(cookieSession({ 
-  name: 'session',
-  keys: ['secret']
-}));
-
-
 //BROWSE
 
 //Redirects to either /login or /urls depending on login status
@@ -68,6 +66,10 @@ app.get("/urls", (req, res) => {
   const user = getUserByID(req.session.user_id, users);
   const urls = urlsForUser(req.session.user_id, urlDatabase);
 
+  if (!user) {
+    return res.status(401).send("Welcome to TinyApp! Please <a href=\"/login\">log in</a> or <a href=\"/register\">register</a> to view URLs");
+  }
+
   const templateVars = {
     user,
     urls
@@ -81,7 +83,7 @@ app.get("/urls", (req, res) => {
 app.post("/urls", (req, res) => {
   const user = getUserByID(req.session.user_id, users);
   if (!user) {
-    return res.status(403).send("403 Forbidden: Only registered users may create shortURLs");
+    return res.status(403).send("Only <a href=\"/register\">registered</a> users may create shortURLs");
   }
 
   const id = generateRandomString();
@@ -98,15 +100,15 @@ app.post("/register", (req, res) => {
   const existentUser = getUserByEmail(email, users);
 
   if (!email || !password) {
-    return res.status(400).send("400 Bad Request: Please provide an email and a password");
+    return res.status(400).send("Please <a href=\"/register\">provide</a> an email and a password");
   }
 
   if (existentUser) {
-    return res.status(400).send("400 Bad Request: Email unavailable");
+    return res.status(400).send("Email unavailable. Please <a href=\"/register\">register</a> with different email");
   }
 
   if (password.length < 4 || password.length > 12) {
-    return res.status(400).send("400 Bad Request: Please provide a password between 4 and 12 characters");
+    return res.status(400).send("Please <a href=\"/register\">provide</a> a password between 4 and 12 characters");
   }
 
   let user = {
@@ -129,13 +131,13 @@ app.post("/login", (req, res) => {
 
 
   if (!existentUser) {
-    return res.status(403).send("403 Forbidden: User not found");
+    return res.status(403).send("User not found. Please <a href=\"/login\">log in</a> or <a href=\"/register\">register</a> to view URLs");
   };
 
   const result = bcrypt.compareSync(password, existentUser.password);
 
   if (!result) {
-    return res.status(403).send("403 Forbidden: Invalid password");
+    return res.status(403).send("Invalid password. Please try and <a href=\"/login\">log in</a> again.");
   }
 
   //Creates user_id cookie
@@ -186,17 +188,17 @@ app.get("/urls/:id", (req, res) => {
   const shortURL = getShortURL(req.params.id, urlDatabase);
   const user = getUserByID(req.session.user_id, users);
   const urls = urlsForUser(req.session.user_id, urlDatabase);
-  
+
   if (!shortURL) {
-    return res.status(404).send("404 Not Found: shortURL does not exist");
+    return res.status(404).send("shortURL does not exist. Please <a href=\"/urls/new\">create new</a> URL");
   }
-  
+
   if (!user) {
-    return res.status(403).send("403 Forbidden: Please login in to view shortURL info");
+    return res.status(403).send("Please <a href=\"/login\">log in</a> to view shortURL info");
   }
 
   if (!urls[req.params.id]) {
-    return res.status(403).send("403 Forbidden: Current user access denied");
+    return res.status(403).send("Current <a href=\"/login\">user</a> access denied.");
   }
 
   const templateVars = {
@@ -211,7 +213,7 @@ app.get("/urls/:id", (req, res) => {
 app.get("/u/:id", (req, res) => {
   const id = getShortURL(req.params.id, urlDatabase);
   if (!id) {
-    return res.status(404).send("404 Not Found: shortURL does not exist");
+    return res.status(404).send("shortURL does not exist. Please <a href=\"/urls/new\">create new</a> URL");
   }
 
   const longURL = urlDatabase[req.params.id].longURL;
@@ -227,15 +229,15 @@ app.post("/urls/:id", (req, res) => {
   const urls = urlsForUser(req.session.user_id, urlDatabase);
 
   if (!shortURL) {
-    return res.status(404).send("404 Not Found: shortURL does not exist");
+    return res.status(404).send("shortURL does not exist. Please <a href=\"/urls/new\">create new</a> URL");
   }
 
   if (!user) {
-    return res.status(401).send("401 Unauthorized: Please sign in to edit shortURL");
+    return res.status(401).send("Please <a href=\"/login\">log in</a> to view shortURL info");
   }
 
   if (!urls[req.params.id]) {
-    return res.status(403).send("403 Forbidden: Do not have access to edit shortURL");
+    return res.status(403).send("Current <a href=\"/login\">user</a> access denied.");
   }
 
   urlDatabase[req.params.id].longURL = req.body.longURL;
@@ -251,15 +253,15 @@ app.post("/urls/:id/delete", (req, res) => {
   const urls = urlsForUser(req.session.user_id, urlDatabase);
 
   if (!shortURL) {
-    return res.status(404).send("404 Not Found: shortURL does not exist");
+    return res.status(404).send("shortURL does not exist. Please <a href=\"/urls/new\">create new</a> URL");
   }
 
   if (!user) {
-    return res.status(401).send("401 Unauthorized: Please sign in to delete shortURL");
+    return res.status(401).send("Please <a href=\"/login\">log in</a> to view shortURL info");
   }
 
   if (!urls[req.params.id]) {
-    return res.status(403).send("403 Forbidden: Do not have permission to delete shortURL");
+    return res.status(403).send("Current <a href=\"/login\">user</a> access denied.");
   }
 
   delete urlDatabase[req.params.id];
